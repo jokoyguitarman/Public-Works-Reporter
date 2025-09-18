@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Public Works Reporter",
+    "slug": "public-works-reporter",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs location access to show nearby public works projects.",
+        "NSCameraUsageDescription": "This app needs camera access to capture photos of project conditions."
+      }
+    },
+    "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+    },
+    "plugins": [
+      "expo-location",
+      "expo-camera"
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "start_app": "4e07d41a7b4b47a4a08e03caa8b3eafa",
+  "items": [
+    "0b985e01d6b24d66a518627e630f9875",
+    "313fd85a3d784ce6a7c4eb3832ca7a85",
+    "348a48119cad4424b9e7dcbb89a77a4a",
+    "4a0e0512fa774ad79e6993af445d55d4",
+    "4e07d41a7b4b47a4a08e03caa8b3eafa",
+    "538da0653e8949f4877b4a527df7cb92",
+    "5861789db21c4c529098a600fb64e1de",
+    "6d8843d056fc4b6caa0a77e2142d4d31",
+    "86d5846042a143e5828e85b77dbf0924",
+    "b461d12e09a748fd9fbde245da399743",
+    "c3f35018a2ed49b187c8c9100c9cbe3a",
+    "da168372ec6149b48a51c6402c391b2c",
+    "ffe7c3e6c5904769872e1ab33c57c135"
+  ],
+  "layers": [
+    "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/ASIAN_and_Nautical_Highway_Layers/FeatureServer/0",
+    "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/ASIAN_and_Nautical_Highway_Layers/FeatureServer/1",
+    "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/ASIAN_and_Nautical_Highway_Layers/FeatureServer/2",
+    "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/ASIAN_and_Nautical_Highway_Layers/FeatureServer/3",
+    "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/Detailed_Bridge_Inventory_Final/FeatureServer/1",
+    "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/Kilometer_Post/FeatureServer/0"
+  ],
+  "files": [
+    {
+      "url": "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/ASIAN_and_Nautical_Highway_Layers/FeatureServer/0",
+      "file": "dpwh_dump_v2\\ASIAN_and_Nautical_Highway_Layers_FeatureServer_0.geojson",
+      "features": 152
+    },
+    {
+      "url": "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/ASIAN_and_Nautical_Highway_Layers/FeatureServer/1",
+      "file": "dpwh_dump_v2\\ASIAN_and_Nautical_Highway_Layers_FeatureServer_1.geojson",
+      "features": 15
+    },
+    {
+      "url": "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/ASIAN_and_Nautical_Highway_Layers/FeatureServer/2",
+      "file": "dpwh_dump_v2\\ASIAN_and_Nautical_Highway_Layers_FeatureServer_2.geojson",
+      "features": 5
+    },
+    {
+      "url": "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/ASIAN_and_Nautical_Highway_Layers/FeatureServer/3",
+      "file": "dpwh_dump_v2\\ASIAN_and_Nautical_Highway_Layers_FeatureServer_3.geojson",
+      "features": 150
+    },
+    {
+      "url": "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/Detailed_Bridge_Inventory_Final/FeatureServer/1",
+      "file": "dpwh_dump_v2\\Detailed_Bridge_Inventory_Final_FeatureServer_1.geojson",
+      "features": 9007
+    },
+    {
+      "url": "https://services1.arcgis.com/IwZZTMxZCmAmFYvF/arcgis/rest/services/Kilometer_Post/FeatureServer/0",
+      "file": "dpwh_dump_v2\\Kilometer_Post_FeatureServer_0.geojson",
+      "features": 32674
+    }
+  ]
+}
