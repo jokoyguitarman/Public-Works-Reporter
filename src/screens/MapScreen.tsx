@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+// Import will be done dynamically to avoid Metro bundler issues
 import GeoJSONLayer from '../components/GeoJSONLayer';
 
 interface ReportMarker {
@@ -34,8 +35,7 @@ const MapScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [geoJsonData, setGeoJsonData] = useState<any[]>([]);
   const [allGeoJsonData, setAllGeoJsonData] = useState<any[]>([]); // Store complete dataset
-  const [showHighways, setShowHighways] = useState(true);
-  const [showBridges, setShowBridges] = useState(true);
+  const [infrastructureType, setInfrastructureType] = useState<'bridges' | 'highways' | 'kilometer-posts'>('bridges'); // Default to bridges
 
   useEffect(() => {
     getCurrentLocation();
@@ -44,6 +44,11 @@ const MapScreen: React.FC = () => {
     // Load GeoJSON data
     loadGeoJSONData();
   }, []);
+
+  // Reload data when infrastructure type changes
+  useEffect(() => {
+    loadGeoJSONData();
+  }, [infrastructureType]);
 
   const getCurrentLocation = async () => {
     try {
@@ -106,80 +111,131 @@ const MapScreen: React.FC = () => {
 
   const loadGeoJSONData = async () => {
     try {
-      console.log('🔄 Starting to load GeoJSON data...');
-      
-      // Import ALL COMPLETE DPWH DATA - 42,003+ Infrastructure Features!
-      const modules = await Promise.all([
-        import('../assets/geojson/highways-layer-0.js').catch(e => {
-          console.error('Failed to load highways-layer-0:', e);
-          return { highwaysLayer0: { type: 'FeatureCollection', features: [] } };
-        }),
-        import('../assets/geojson/highways-layer-1.js').catch(e => {
-          console.error('Failed to load highways-layer-1:', e);
-          return { highwaysLayer1: { type: 'FeatureCollection', features: [] } };
-        }),
-        import('../assets/geojson/highways-layer-2.js').catch(e => {
-          console.error('Failed to load highways-layer-2:', e);
-          return { highwaysLayer2: { type: 'FeatureCollection', features: [] } };
-        }),
-        import('../assets/geojson/highways-layer-3.js').catch(e => {
-          console.error('Failed to load highways-layer-3:', e);
-          return { highwaysLayer3: { type: 'FeatureCollection', features: [] } };
-        }),
-        import('../assets/geojson/bridges-complete.js').catch(e => {
-          console.error('Failed to load bridges-complete:', e);
-          return { bridgesComplete: { type: 'FeatureCollection', features: [] } };
-        }),
-        import('../assets/geojson/kilometer-posts-complete.js').catch(e => {
-          console.error('Failed to load kilometer-posts-complete:', e);
-          return { kilometerPostsComplete: { type: 'FeatureCollection', features: [] } };
-        })
-      ]);
-
-      const [
-        { highwaysLayer0 },
-        { highwaysLayer1 },
-        { highwaysLayer2 },
-        { highwaysLayer3 },
-        { bridgesComplete },
-        { kilometerPostsComplete }
-      ] = modules;
-
-      // Validate and store complete dataset
-      const datasets = [
-        { name: 'highways-layer-0', data: highwaysLayer0 },
-        { name: 'highways-layer-1', data: highwaysLayer1 },
-        { name: 'highways-layer-2', data: highwaysLayer2 },
-        { name: 'highways-layer-3', data: highwaysLayer3 },
-        { name: 'bridges-complete', data: bridgesComplete },
-        { name: 'kilometer-posts-complete', data: kilometerPostsComplete }
-      ];
-
-      const validatedData = datasets.map(({ name, data }) => {
-        if (!data || !data.features || !Array.isArray(data.features)) {
-          console.warn(`⚠️ Invalid data for ${name}, using empty dataset`);
-          return { type: 'FeatureCollection', features: [] };
-        }
-        console.log(`✅ ${name}: ${data.features.length} features`);
-        return data;
+      console.log(`🔄 Loading ${infrastructureType} data from Supabase...`);
+      console.log('🔧 Environment check:', {
+        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       });
       
-      setAllGeoJsonData(validatedData);
-
-      console.log('🗺️ COMPLETE DPWH INFRASTRUCTURE DATA LOADED! 🎉');
+      // Create supabase client using require to avoid Metro bundler issues
+      const { createClient } = require('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
-      const totalFeatures = validatedData.reduce((sum, data) => sum + (data.features?.length || 0), 0);
-      console.log(`📊 Total: ${validatedData.length} datasets with ${totalFeatures} features loaded`);
+      if (!supabaseUrl || !supabaseKey) {
+        console.error('❌ Missing Supabase environment variables');
+        setAllGeoJsonData([]);
+        setGeoJsonData([]);
+        return;
+      }
+      
+      console.log('🔗 Connecting to Supabase:', supabaseUrl.substring(0, 30) + '...');
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Map infrastructure type to project type
+      let projectType: string;
+      if (infrastructureType === 'bridges') {
+        projectType = 'bridge';
+      } else if (infrastructureType === 'highways') {
+        projectType = 'road';
+      } else {
+        projectType = 'other'; // kilometer posts
+      }
+      
+      // Query projects from Supabase with spatial data
+      console.log(`🔍 Querying projects with type: "${projectType}"`);
+      const { data: projects, error } = await supabase
+        .from('projects')
+        .select('project_id, name, type, city, barangay, geom, raw')
+        .eq('type', projectType)
+        .order('project_id') // Order to ensure we get diverse geographic distribution
+        .limit(50000); // Very high limit to get ALL bridges from database
+      
+      console.log('🔍 Query result:', { 
+        error: error, 
+        dataLength: projects?.length,
+        hasData: !!projects 
+      });
+      
+      if (error) {
+        console.error('❌ Supabase query error:', error);
+        setAllGeoJsonData([]);
+        setGeoJsonData([]);
+        return;
+      }
+      
+      if (!projects || projects.length === 0) {
+        console.warn(`⚠️ No ${infrastructureType} found in database`);
+        setAllGeoJsonData([]);
+        setGeoJsonData([]);
+        return;
+      }
+      
+      console.log(`✅ Loaded ${projects.length} ${infrastructureType} from Supabase`);
+      console.log('📋 Sample project data:', projects[0]); // Debug log
+      
+      // Convert Supabase data to GeoJSON format
+      const geoJsonFeatures = (projects || [])
+        .filter(project => project.geom) // Only include projects with geometry
+        .map(project => {
+          let geometry = project.geom;
+          
+          // Handle different geometry formats from PostGIS
+          if (typeof geometry === 'string') {
+            try {
+              geometry = JSON.parse(geometry);
+            } catch (e) {
+              console.warn('Failed to parse geometry:', e);
+              return null;
+            }
+          }
+          
+          return {
+            type: 'Feature',
+            geometry: geometry,
+            properties: {
+              project_id: project.project_id,
+              name: project.name,
+              type: project.type,
+              city: project.city,
+              barangay: project.barangay,
+              ...project.raw // Include original properties
+            }
+          };
+        })
+        .filter(feature => feature !== null); // Remove invalid features
+      
+      console.log(`🗺️ Created ${geoJsonFeatures.length} GeoJSON features`);
+      
+      // Debug: Log sample geometry to see format
+      if (geoJsonFeatures.length > 0) {
+        console.log('🔍 Sample geometry:', JSON.stringify(geoJsonFeatures[0].geometry, null, 2));
+        console.log('🔍 Sample properties:', geoJsonFeatures[0].properties);
+      }
+      
+      const geoJsonData = [{
+        type: 'FeatureCollection',
+        features: geoJsonFeatures
+      }];
+      
+      setAllGeoJsonData(geoJsonData);
+      
+      console.log('🗺️ DPWH INFRASTRUCTURE DATA LOADED FROM SUPABASE! 🎉');
+      console.log(`📊 Total: ${geoJsonFeatures.length} features loaded`);
+      
+      // TEMPORARY: Show all data to check how many bridges are actually loading
+      console.log('🚨 SHOWING ALL DATA - CHECK TOTAL BRIDGE COUNT');
+      setGeoJsonData(geoJsonData);
       
       // Filter nearby features if user location is available
-      if (location) {
-        updateNearbyFeatures(location.coords.latitude, location.coords.longitude);
-      } else {
-        // If no location yet, show everything (will be filtered when location is obtained)
-        setGeoJsonData(validatedData);
-      }
+      // if (location) {
+      //   updateNearbyFeatures(location.coords.latitude, location.coords.longitude);
+      // } else {
+      //   // If no location yet, show everything (will be filtered when location is obtained)
+      //   setGeoJsonData(geoJsonData);
+      // }
     } catch (error) {
-      console.error('Error loading GeoJSON data:', error);
+      console.error('Error loading data from Supabase:', error);
       setGeoJsonData([]);
     }
   };
@@ -387,6 +443,30 @@ const MapScreen: React.FC = () => {
         <Text style={styles.subtitle}>View reported issues in your area</Text>
       </View>
 
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterButton, infrastructureType === 'bridges' && styles.filterButtonActive]}
+          onPress={() => setInfrastructureType('bridges')}
+        >
+          <Ionicons name="git-branch" size={20} color={infrastructureType === 'bridges' ? '#fff' : '#3498db'} />
+          <Text style={[styles.filterButtonText, infrastructureType === 'bridges' && styles.filterButtonTextActive]}>Bridges</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, infrastructureType === 'highways' && styles.filterButtonActive]}
+          onPress={() => setInfrastructureType('highways')}
+        >
+          <Ionicons name="car" size={20} color={infrastructureType === 'highways' ? '#fff' : '#3498db'} />
+          <Text style={[styles.filterButtonText, infrastructureType === 'highways' && styles.filterButtonTextActive]}>Highways</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, infrastructureType === 'kilometer-posts' && styles.filterButtonActive]}
+          onPress={() => setInfrastructureType('kilometer-posts')}
+        >
+          <Ionicons name="locate" size={20} color={infrastructureType === 'kilometer-posts' ? '#fff' : '#3498db'} />
+          <Text style={[styles.filterButtonText, infrastructureType === 'kilometer-posts' && styles.filterButtonTextActive]}>KM Posts</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.mapContainer}>
         <MapView
           style={styles.map}
@@ -536,6 +616,37 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 14,
     color: '#7f8c8d',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e8ed',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#3498db',
+    backgroundColor: '#fff',
+  },
+  filterButtonActive: {
+    backgroundColor: '#3498db',
+  },
+  filterButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3498db',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
   },
 });
 
